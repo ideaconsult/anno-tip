@@ -1,0 +1,52 @@
+{
+  "name": "anno-tip",
+  "version": "0.9.0",
+  "description": "Lightweigh web annotation library built on top of Tippy.js",
+  "module": "./src/AnnoTip.js",
+  "main": "dist/anno-tip.js",
+  "browser": {
+    "AnnoTip": "browser/anno-tip.js"
+  },
+  "browserify-shim": {
+    "jquery": "global:$"
+  },
+  "scripts": {
+    "test": "jasmine",
+    "build": "rollup -c",
+    "docs": "gulp docs",
+    "prepublishOnly": "npm test",
+    "postpublish": "VERSION=$(node -e 'console.log(require(\"./package.json\").version)'); git push && git tag \"v${VERSION}\" && git push --tags"
+  },
+  "keywords": [
+    "annotation",
+    "annotator",
+    "web",
+    "tippy"
+  ],
+  "author": "Ivan (Jonan) Georgiev <ivan@jonan.info>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ideaconsult/anno-tip.git"
+  },
+  "bugs": "https://github.com/ideaconsult/anno-tip/labels/bug",
+  "dependencies": {
+    "tippy.js": "^6.1.0",
+    "jquery": "^3.4.1"
+  },
+  "peerDependencies": {
+    "rollup": "^1.20.0||^2.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.9.0",
+    "@babel/preset-env": "^7.9.0",
+    "rollup": "^2.2.0",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-terser": "^5.3.0",
+    "@rollup/plugin-json": "^4.0.2",
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "@rollup/plugin-node-resolve": "^7.1.1",
+    "jsdoc-to-markdown": "^5.0.3",
+    "jasmine": "^3.5.0"
+  }
+}
