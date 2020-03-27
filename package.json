@@ -5,17 +5,17 @@
   "module": "./src/AnnoTip.js",
   "main": "dist/anno-tip.js",
   "browser": {
-    "AnnoTip": "browser/anno-tip.js"
-  },
-  "browserify-shim": {
-    "jquery": "global:$"
+    "AnnoTip": "dist/anno-tip.js"
   },
   "scripts": {
-    "test": "jasmine",
+    "lint": "eslint .",
+    "pretest": "npm run lint && npm run build",
+    "test": "jasmine tests",
+    "posttest": "ROLL_CONFIG=full rollup -c",
     "build": "rollup -c",
-    "docs": "gulp docs",
+    "clean": "rm -f dist/*",
     "prepublishOnly": "npm test",
-    "postpublish": "VERSION=$(node -e 'console.log(require(\"./package.json\").version)'); git push && git tag \"v${VERSION}\" && git push --tags"
+    "postpublish": "git push && git tag \"v${npm_package_version}\" && git push --tags"
   },
   "keywords": [
     "annotation",
@@ -47,6 +47,7 @@
     "@rollup/plugin-commonjs": "^11.0.2",
     "@rollup/plugin-node-resolve": "^7.1.1",
     "jsdoc-to-markdown": "^5.0.3",
+    "eslint": "^6.8.0",
     "jasmine": "^3.5.0"
   }
 }
