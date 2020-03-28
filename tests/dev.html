@@ -135,7 +135,21 @@
   <script src="../dist/anno-tip.js"></script>
 
   <script>
-    var at = new AnnoTip();
+    var at = new AnnoTip({
+      onSelection: function (anno) {
+        anno.content = anno.selection.toUpperCase();
+      },
+      onAction: function (action, anno) {
+        console.log("AnnoTip: onAction: " + action);
+        if (action === 'ok')
+          $('div.annotip-dlg', anno.element).show();
+        else
+          this.discard();
+      },
+      onClose: function (anno) {
+        console.log("AnnoTip: onClose");
+      }
+    });
     at.attach(document.body);
   </script>
 </body>
