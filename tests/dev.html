@@ -135,9 +135,8 @@
   <script src="../dist/anno-tip.js"></script>
 
   <script>
-    tippy('h1, h2, h3', {
-      content: 'Tooltip'
-    });
+    var at = new AnnoTip();
+    at.attach(document.body);
   </script>
 </body>
 

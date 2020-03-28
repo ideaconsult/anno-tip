@@ -13,6 +13,7 @@
     "test": "jasmine tests",
     "posttest": "ROLL_CONFIG=full rollup -c",
     "build": "rollup -c",
+    "dev": "npm-watch",
     "clean": "rm -f dist/*",
     "prepublishOnly": "npm test",
     "postpublish": "git push && git tag \"v${npm_package_version}\" && git push --tags"
@@ -35,19 +36,23 @@
     "jquery": "^3.4.1"
   },
   "peerDependencies": {
-    "rollup": "^1.20.0||^2.0.0"
+    "rollup": "^1.20.0"
+  },
+  "watch": {
+    "build": "{src,test}/*.js"
   },
   "devDependencies": {
     "@babel/core": "^7.9.0",
     "@babel/preset-env": "^7.9.0",
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "@rollup/plugin-json": "^4.0.2",
+    "@rollup/plugin-node-resolve": "^7.1.1",
+    "eslint": "^6.8.0",
+    "jasmine": "^3.5.0",
+    "jsdoc-to-markdown": "^5.0.3",
     "rollup": "^2.2.0",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-terser": "^5.3.0",
-    "@rollup/plugin-json": "^4.0.2",
-    "@rollup/plugin-commonjs": "^11.0.2",
-    "@rollup/plugin-node-resolve": "^7.1.1",
-    "jsdoc-to-markdown": "^5.0.3",
-    "eslint": "^6.8.0",
-    "jasmine": "^3.5.0"
+    "npm-watch": "^0.6.0"
   }
 }

@@ -4,163 +4,108 @@ import $ from 'jquery';
 
 const SEL_NS = "annotip-text";
 
-/*
- * IsAnnotator determines if the provided element is part of Annotator. Useful
- * for ignoring mouse actions on the annotator elements.
- * 
- * @param element - An Element or TextNode to check.
- * 
- * Returns true if the element is a child of an annotator element.
- */
-function isAnnotator(element) {
-    const elAndParents = $(element).parents().
-    addBack();
-
-    return elAndParents.filter('[class^=annotator-]').length !== 0;
+function isMultiElement(range1, range2) {
+	return $.unique([
+		range1.startContainer, range1.endContainer, 
+		range2.startContainer, range2.endContainer
+	]).length > 0;
 }
 
+function normalizeRange(range) {
+	const startNode = range.startContainer,
+		endNode = range.endContainer;
 
-/*
- * TextSelector monitors a document (or a specific element) for text selections
- * and can notify another object of a selection event
- */
-function TextSelection(element, options) {
-    this.element = element;
-    this.options = $.extend(true, {}, TextSelection.options, options);
-    this.onSelection = this.options.onSelection;
+	if (startNode == endNode) {
+		if (range.startOffset > range.endOffset) {
+			const _t = range.startOffset;
 
-    if (typeof this.element.ownerDocument !== 'undefined' &&
-        this.element.ownerDocument !== null) {
-        this.document = this.element.ownerDocument;
+			range.setStartOffset(range.endOffset);
+			range.setEndOffset(_t);
+		}
+	}
 
-        $(this.document.body).
-        on(`mouseup.${SEL_NS}`, (e) => {
-            this._checkForEndSelection(e);
-        });
-    } else {
-        console.warn("You created an instance of the TextSelector on an " +
-            "element that doesn't have an ownerDocument. This won't " +
-            "work! Please ensure the element is added to the DOM " +
-            "before the plugin is configured:", this.element);
-    }
+	return range;
 }
 
-TextSelection.prototype.destroy = function () {
-    if (this.document) {
-        $(this.document.body).off(`.${SEL_NS}`);
-    }
-};
+function mergeRanges(ranges) {
+	if (ranges.length == 0)
+		return null;
+	if (ranges.length == 1)
+		return ranges[0];
+	
+	// TODO: Make sure the ranges are properly ordered.
+	const lastR = ranges[ranges.length - 1],
+		unitedR = document.createRange();
 
-/*
- * Public: capture the current selection from the document, excluding any nodes
- * that fall outside of the adder's `element`.
+	unitedR.setStart(ranges[0].startContainer, ranges[0].startOffset);
+	unitedR.setEnd(lastR.endContainer, lastR.endOffset);
+
+	return unitedR;
+}
+
+/**
+ * Initializes a text selection monitoring mechanis.about-content
  * 
- * Returns an Array of NormalizedRange instances.
+ * @param {Element} element The parent DOM element to attach the whole text selection monitoring mechanism to.
+ * @param {Object} settings Settings for monitoring. Check @see TextSelection.defaults.
+ */ 
+function TextSelection(element, settings) {
+	this.element = element;
+	this.settings = $.extend(true, {}, TextSelection.defaults, settings);
+
+	if (this.element.ownerDocument) {
+		this.document = this.element.ownerDocument;
+		
+		$(this.document.body).on(`mouseup.${SEL_NS}`, (e) => {
+			this._handleSelection(e);
+		});
+	} else {
+		throw new Error(`Non-attached element used for text selection: ${element}`);
+	}
+}
+
+/**
+ * Detach the text selection monitoring mechanism.
  */
-TextSelection.prototype.captureDocumentSelection = function () {
-    let i = 0,
-        len = 0;
-    const ranges = [],
-        rangesToIgnore = [],
-        selection = window.getSelection();
-
-    if (selection.isCollapsed) {
-        return [];
-    }
-
-    for (i = 0; i < selection.rangeCount; i++) {
-        const r = selection.getRangeAt(i),
-            browserRange = r, // new xpathRange.Range.BrowserRange(r),
-            normedRange = browserRange.normalize().limit(this.element);
-
-        /*
-         * If the new range falls fully outside our this.element, we should
-         * add it back to the document but not return it from this method.
-         */
-        if (normedRange === null) {
-            rangesToIgnore.push(r);
-        } else {
-            ranges.push(normedRange);
-        }
-    }
-
-    /*
-     * BrowserRange#normalize() modifies the DOM structure and deselects the
-     * underlying text as a result. So here we remove the selected ranges and
-     * reapply the new ones.
-     */
-    selection.removeAllRanges();
-
-    for (i = 0, len = rangesToIgnore.length; i < len; i++) {
-        selection.addRange(rangesToIgnore[i]);
-    }
-
-    // Add normed ranges back to the selection
-    for (i = 0, len = ranges.length; i < len; i++) {
-        const range = ranges[i],
-            drange = this.document.createRange();
-
-        drange.setStartBefore(range.start);
-        drange.setEndAfter(range.end);
-        selection.addRange(drange);
-    }
-
-
-    return ranges;
+TextSelection.prototype.detach = function () {
+	if (this.document)
+		$(this.document.body).off(`.${SEL_NS}`);
 };
 
-/*
- * Event callback: called when the mouse button is released. Checks to see if a
- * selection has been made and if so displays the adder.
- * 
- * event - A mouseup Event object.
- * 
- * Returns nothing.
+
+/**
+ * Handles the mouse-up event, supposedly after a selection is made.
+ * @param event The actual mouse-up event.
  */
-TextSelection.prototype._checkForEndSelection = function (event) {
-    const _nullSelection = () => {
-        if (typeof this.onSelection === 'function') {
-            this.onSelection([], event);
-        }
-    };
+TextSelection.prototype._handleSelection = function (event) {
+	const selection = this.document.getSelection(); // TODO: Check with defaultView
 
-    // Get the currently selected ranges.
-    const selectedRanges = this.captureDocumentSelection();
+	if (selection.isCollapsed)
+		return;
+	
+	const myRanges = [];
 
-    if (selectedRanges.length === 0) {
-        _nullSelection();
+	for (let i = 0; i < selection.rangeCount; ++i) {
+		const r = selection.getRangeAt(i);
 
-        return;
-    }
+		if (!$.contains(this.element, r.commonAncestorContainer))
+			continue;
+		else if (this.multipleNodes || myRanges.length == 0 || !isMultiElement(myRanges[0], r))
+			myRanges.push(normalizeRange(r));
+	}
 
-    // Don't show the adder if the selection was of a part of Annotator itself.
-    for (let i = 0, len = selectedRanges.length; i < len; i++) {
-        let container = selectedRanges[i].commonAncestor;
-
-        if ($(container).hasClass('annotator-hl')) {
-            container = $(container).parents('[class!=annotator-hl]')[0];
-        }
-        if (isAnnotator(container)) {
-            _nullSelection();
-
-            return;
-        }
-    }
-
-    if (typeof this.onSelection === 'function') {
-        this.onSelection(selectedRanges, event);
-    }
+	if (myRanges.length > 0)
+		this.settings.onSelection(selection.toString(), event, mergeRanges(myRanges));
 };
 
-
-// Configuration options
-TextSelection.options = {
-    /*
-     * Callback, called when the user makes a selection.
-     * Receives the list of selected ranges (may be empty) and  the DOM Event
-     * that was detected as a selection.
-     */
-    onSelection: null
+/**
+ * Default options.
+ */
+TextSelection.defaults = {
+	// Whether selections over more than one element are allowed.
+	multipleNodes: false,
+	// function (content, event, ranges)
+	onSelection: null
 };
 
 export default TextSelection;
