@@ -4,6 +4,9 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import { terser } from "rollup-plugin-terser";
 import path from 'path';
+import postcss from 'rollup-plugin-postcss';
+import imageInliner from 'postcss-image-inliner';
+import cssnano from 'cssnano';
 
 import pkg from './package.json';
 
@@ -34,6 +37,16 @@ const DEF_CONFIG = {
 		}
 	],
 	plugins: [
+		postcss({
+			extensions: [ '.css' ],
+			plugins: [ 
+				imageInliner({ 
+					assetPaths: [ 'src' ], 
+					maxFileSize: 0 
+				}),
+				cssnano()
+			]
+		}),
 		babel({
 			presets: [ '@babel/preset-env' ]
 		}),
@@ -58,6 +71,16 @@ const FULL_CONFIG = {
 		format: 'iife'
 	}],
 	plugins: [
+		postcss({
+			extensions: [ '.css' ],
+			plugins: [ 
+				imageInliner({ 
+					assetPaths: [ 'src' ], 
+					maxFileSize: 0 
+				}),
+				cssnano()
+			]
+		}),
 		resolve({ 
 			browser: true 
 		}),

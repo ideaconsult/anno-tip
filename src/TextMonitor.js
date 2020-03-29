@@ -50,11 +50,11 @@ function mergeRanges(ranges) {
  * @param {Event} event The event that triggered the selection (mouseup)
  * @param {Array<Range>} ranges The array of ranges, that this selection occupies
  */
-function TextSelection(content, event, ranges) {
-	this.content = content;
+function TextSelection(selection, event, ranges) {
+	this.selection = selection;
+	this.content = selection.toString();
 	this.event = event;
 	this.range = mergeRanges(ranges);
-
 }
 
 TextSelection.prototype.getElement = function() {
@@ -67,6 +67,10 @@ TextSelection.prototype.getBoundingRect = function () {
 	return this.range.getBoundingClientRect();
 };
 
+TextSelection.prototype.discard = function () {
+	this.selection.removeAllRanges();
+};
+
 
 /**
  * Initializes a text selection monitoring mechanis.about-content
@@ -74,16 +78,18 @@ TextSelection.prototype.getBoundingRect = function () {
  * @param {Element} element The parent DOM element to attach the whole text selection monitoring mechanism to.
  * @param {Object} settings Settings for monitoring. Check @see TextSelection.defaults.
  */ 
-function TextMonitor(element, settings) {
-	this.element = element;
+function TextMonitor(selector, settings) {
+	this.elements = selector;
 	this.settings = $.extend(true, {}, TextMonitor.defaults, settings);
 
-	if (this.element.ownerDocument) {
-		this.document = this.element.ownerDocument;
+	const oneElement = $(selector)[0];
+
+	if (oneElement.ownerDocument) {
+		this.document = oneElement.ownerDocument;
 		
 		$(this.document.body).on('mouseup.' + NS_SEL, (e) => this._handleSelection(e));
 	} else {
-		throw new Error(`Non-attached element used for text selection: ${element}`);
+		throw new Error(`Non-attached element(s) used for text selection: ${selector}`);
 	}
 }
 
@@ -100,24 +106,23 @@ TextMonitor.prototype.detach = function () {
  * @param event The actual mouse-up event.
  */
 TextMonitor.prototype._handleSelection = function (event) {
-	const selection = this.document.getSelection(); // TODO: Check with defaultView
+	const selection = this.document.getSelection();
 
-	if (selection.isCollapsed)
-		return;
+	if (selection.isCollapsed) return;
 	
 	const myRanges = [];
 
 	for (let i = 0; i < selection.rangeCount; ++i) {
 		const r = selection.getRangeAt(i);
 
-		if (!$.contains(this.element, r.commonAncestorContainer))
+		if (!$(r.commonAncestorContainer).parents().is(this.elements))
 			continue;
 		else if (this.multipleNodes || myRanges.length == 0 || !isMultiElement(myRanges[0], r))
 			myRanges.push(normalizeRange(r));
 	}
 
 	if (myRanges.length > 0)
-		this.settings.onSelection(new TextSelection(selection.toString(), event, myRanges));
+		this.settings.onSelection(new TextSelection(selection, event, myRanges));
 };
 
 /**

@@ -132,17 +132,19 @@
   <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
   <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.js"></script>
 
-  <script src="../dist/anno-tip.js"></script>
+  <script src="../browser/anno-tip.js"></script>
 
   <script>
     var at = new AnnoTip({
       onSelection: function (anno) {
-        anno.content = anno.selection.toUpperCase();
+        // anno.content = anno.selection.toUpperCase();
       },
       onAction: function (action, anno) {
         console.log("AnnoTip: onAction: " + action);
-        if (action === 'ok')
-          $('div.annotip-dlg', anno.element).show();
+        if (action === 'edit') {
+          // anno.content = anno.selection.toUpperCase();
+          this.update(anno).getFrame().addClass('openned');
+        }
         else
           this.discard();
       },

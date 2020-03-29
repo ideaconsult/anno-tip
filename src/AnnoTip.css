@@ -1,0 +1,43 @@
+/* AnnoTip library styles
+	Author: Ivan (Jonan) Georgiev, 2020
+*/
+
+div.annotip-actions {
+	text-align: right;
+}
+
+div.annotip-frame>div.annotip-actions>button {
+	width: 16px;
+	height: 16px;
+	background-color:transparent;
+	background-image: url(./Icons-Dark.png);
+	background-repeat: no-repeat;
+	background-size: 48px 32px;
+	margin: 3px;
+	border: 0px;
+}
+
+div.annotip-frame.light>div.annotip-actions>button {
+	background-image: url(./Icons-Light.png);
+}
+
+div.annotip-frame.big>div.annotip-actions>button {
+	width: 32px;
+	height: 32px;
+	background-size: 96px 64px;
+	margin: 5px;
+}
+
+div.annotip-frame.big>div.annotip-actions>button.annotip-action-edit { background-position: 0px 0px; }
+div.annotip-frame.big>div.annotip-actions>button.annotip-action-edit:hover { background-position: 0px -32px; }
+div.annotip-frame.big>div.annotip-actions>button.annotip-action-cancel { background-position: -32px 0px; }
+div.annotip-frame.big>div.annotip-actions>button.annotip-action-cancel:hover { background-position: -32px -32px; }
+div.annotip-frame.big>div.annotip-actions>button.annotip-action-ok { background-position: -64px 0px; }
+div.annotip-frame.big>div.annotip-actions>button.annotip-action-ok:hover { background-position: -64px -32px; }
+
+div.annotip-actions>button.annotip-action-edit { background-position: 0px 0px; }
+div.annotip-actions>button.annotip-action-edit:hover { background-position: 0px -16px; }
+div.annotip-actions>button.annotip-action-cancel { background-position: -16px 0px; }
+div.annotip-actions>button.annotip-action-cancel:hover { background-position: -16px -16px; }
+div.annotip-actions>button.annotip-action-ok { background-position: -32px 0px; }
+div.annotip-actions>button.annotip-action-ok:hover { background-position: -32px -16px; }
