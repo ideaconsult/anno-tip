@@ -45,7 +45,7 @@ function mergeRanges(ranges) {
 
 
 /**
- * A wrapper of relevant selection data, to be passed to @see {AnnoTip}.
+ * A wrapper of relevant selection data, to be passed to {@link AnnoTip}.
  * @param {String} content The plain text version of the selected content
  * @param {Event} event The event that triggered the selection (mouseup)
  * @param {Array<Range>} ranges The array of ranges, that this selection occupies
@@ -57,18 +57,32 @@ function TextSelection(selection, event, ranges) {
 	this.range = mergeRanges(ranges);
 }
 
+/**
+ * Returns the DOM element that wrapps the selection.
+ * @returns {Element} The DOM element containing the entire selection.
+ */
 TextSelection.prototype.getElement = function() {
 	const parentEl = this.range.commonAncestorContainer;
 
 	return parentEl instanceof Element ? parentEl : parentEl.parentElement;
 };
 
+/**
+ * Returns the bounding box of the selection.
+ * @returns {DOMRect} The rectangle containing all elements & nodes of the selection.
+ */
 TextSelection.prototype.getBoundingRect = function () {
 	return this.range.getBoundingClientRect();
 };
 
+/**
+ * Discards the selection, i.e. - deselect.
+ * @returns {TextSelection} For chaining calls.
+ */
 TextSelection.prototype.discard = function () {
 	this.selection.removeAllRanges();
+
+	return this;
 };
 
 
@@ -76,7 +90,7 @@ TextSelection.prototype.discard = function () {
  * Initializes a text selection monitoring mechanis.about-content
  * 
  * @param {Element} element The parent DOM element to attach the whole text selection monitoring mechanism to.
- * @param {Object} settings Settings for monitoring. Check @see TextSelection.defaults.
+ * @param {Object} settings Settings for monitoring. Check {@link TextMonitor.defaults}.
  */ 
 function TextMonitor(selector, settings) {
 	this.elements = selector;
@@ -95,15 +109,19 @@ function TextMonitor(selector, settings) {
 
 /**
  * Detach the text selection monitoring mechanism.
+ * @returns {TextMonitor} For chaining calls.
  */
 TextMonitor.prototype.detach = function () {
 	if (this.document)
 		$(this.document.body).off('.' + NS_SEL);
+
+	return this;
 };
 
 /**
  * Handles the mouse-up event, supposedly after a selection is made.
  * @param event The actual mouse-up event.
+ * @private
  */
 TextMonitor.prototype._handleSelection = function (event) {
 	const selection = this.document.getSelection();
@@ -129,9 +147,13 @@ TextMonitor.prototype._handleSelection = function (event) {
  * Default options.
  */
 TextMonitor.defaults = {
-	// Whether selections over more than one element are allowed.
+	/**
+	 * Whether selections over more than one DOM element are allowed.
+	 * */ 
 	multipleNodes: false,
-	// function (content, event, ranges)
+	/**
+	 * Handler when a selection is detected. `function (TextSelection)`.
+	 */
 	onSelection: null
 };
 

@@ -3,15 +3,16 @@
   "version": "0.9.0",
   "description": "Lightweigh web annotation library built on top of Tippy.js",
   "module": "./src/AnnoTip.js",
-  "main": "browser/anno-tip.js",
+  "main": "./dist/anno-tip.cjs.js",
   "browser": {
-    "AnnoTip": "browser/anno-tip.js"
+    "AnnoTip": "dist/anno-tip.js"
   },
   "scripts": {
     "lint": "eslint .",
     "pretest": "npm run lint && npm run build",
-    "test": "jasmine tests",
-    "posttest": "ROLL_CONFIG=full rollup -c",
+    "test": "jest tests",
+    "posttest": "ROLL_CONFIG=full rollup -c && npm run doc",
+    "doc": "jsdoc2md src/*.js > API.md",
     "build": "rollup -c",
     "dev": "npm-watch",
     "clean": "rm -f dist/*",
@@ -49,7 +50,7 @@
     "@rollup/plugin-node-resolve": "^7.1.1",
     "cssnano": "^4.1.10",
     "eslint": "^6.8.0",
-    "jasmine": "^3.5.0",
+    "jest": "^25.4.0",
     "jsdoc-to-markdown": "^5.0.3",
     "npm-watch": "^0.6.0",
     "postcss-image-inliner": "^3.0.9",

@@ -3,15 +3,15 @@ import babel from 'rollup-plugin-babel';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import { terser } from "rollup-plugin-terser";
-import path from 'path';
 import postcss from 'rollup-plugin-postcss';
 import imageInliner from 'postcss-image-inliner';
 import cssnano from 'cssnano';
 
 import pkg from './package.json';
 
-const varName = path.basename(pkg.module, '.js');
-const minName = pkg.main.slice(0, -3) + ".min.js";
+const varName = Object.keys(pkg.browser)[0];
+const distFile = pkg.browser[varName];
+const minName = distFile.slice(0, -3) + ".min.js";
 const DEF_GLOBALS = {
 	'jquery': '$',
 	'tippy.js': 'tippy'
@@ -21,11 +21,11 @@ const DEF_CONFIG = {
     input: pkg.module,
     output: [
 		{
-			file: pkg.main,
+			file: distFile,
 			globals: DEF_GLOBALS,
 			name: varName,
 			sourcemap: true,
-			sourcemapFile: pkg.main + '.map',
+			sourcemapFile: distFile + '.map',
 			format: 'iife'
 		}, {
 			file: minName,
@@ -34,6 +34,12 @@ const DEF_CONFIG = {
 			sourcemapFile: minName + '.map',
 			name: varName,
 			format: 'iife'
+		}, {
+			file: pkg.main,
+			globals: DEF_GLOBALS,
+			sourcemap: false,
+			name: varName,
+			format: 'cjs'
 		}
 	],
 	plugins: [
@@ -59,7 +65,7 @@ const DEF_CONFIG = {
 };
 
 // Make a full bundle, with all dependency libraries included.
-const fullName = pkg.main.slice(0, -3) + "-full.min.js";
+const fullName = distFile.slice(0, -3) + "-full.min.js";
 const FULL_CONFIG = {
     input: pkg.module,
     output: [{

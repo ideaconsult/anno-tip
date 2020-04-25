@@ -31,6 +31,7 @@ function Anno(base) {
 
 /**
  * Some AnnoTip helpers
+ * @ignore
  */
 const prepareButton = (action) => `<button data-annotip-action="${action}" class="annotip-action-${action}" />`;
 
@@ -138,7 +139,9 @@ AnnoTip.prototype.getFrame = function () {
 
 /**
  * Private methods
+ * @ignore
  */
+
 AnnoTip.prototype._getTippyBox = function () {
 	if (!this._tippyBox$)
 		this._tippyBox$ = $("div.tippy-box");
@@ -206,12 +209,42 @@ AnnoTip.prototype._call = function (hnd, ...moreArgs) {
 	return typeof hnd === 'function' ? hnd.apply(this, moreArgs) : undefined;
 };
 
+/**
+ * Default settings.
+ */
 AnnoTip.defaults = {
+	/**
+	 * The user-provided context to be added to each {@link Anno} created.
+	 */
 	context: null,
+
+	/**
+	 * Whether to install text selection monitoring. {@link TextMonitor}.
+	 * Currently this is the only supported mode.
+	 */
 	textSelection: true,
+
+	/**
+	 * Whether to install element click/handling mointoring. Not supported.
+	 */
 	elementSelection: true,
+
+	/**
+	 * A custom-provided HTML for action buttons, which are openned when a
+	 * selection is recognized.
+	 */
 	actionsHtml: null,
+
+	/**
+	 * Additional class-names to be applied to the annotation frame DOM element. 
+	 * Can be both array and string (with one or more class names).
+	 */
 	classNames: null,
+
+	/**
+	 * The settings to be passed to the underlying Tippy.js box engine.
+	 * {@link https://atomiks.github.io/tippyjs/}.
+	 */
 	tippySettings: {
 		placement: 'auto',
 		hideOnClick: false,
@@ -220,9 +253,23 @@ AnnoTip.defaults = {
 		interactive: true,
 		showOnCreate: true
 	},
-	// Handlers. All accept @see {Anno} as an argument.
+
+	/**
+	 * Handler to be invoked when a selection is made. The constructed {@link Anno} object
+	 * is passed.
+	 */
 	onSelection: null,
+
+	/**
+	 * Handler to be invoked on user action. The default actions are `edit`, `ok` and `cancel`.
+	 * The constructed {@link Anno} object is passed.
+	 */
 	onAction: null,
+
+	/**
+	 * Handler to be invoked when the annotation box is about to be closed.
+	 * The constructed {@link Anno} object is passed.
+	 */
 	onClose: null
 };
 

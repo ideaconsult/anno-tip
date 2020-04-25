@@ -101,7 +101,7 @@ var AnnoTip = (function ($, tippy) {
     return unitedR;
   }
   /**
-   * A wrapper of relevant selection data, to be passed to @see {AnnoTip}.
+   * A wrapper of relevant selection data, to be passed to {@link AnnoTip}.
    * @param {String} content The plain text version of the selected content
    * @param {Event} event The event that triggered the selection (mouseup)
    * @param {Array<Range>} ranges The array of ranges, that this selection occupies
@@ -114,24 +114,40 @@ var AnnoTip = (function ($, tippy) {
     this.event = event;
     this.range = mergeRanges(ranges);
   }
+  /**
+   * Returns the DOM element that wrapps the selection.
+   * @returns {Element} The DOM element containing the entire selection.
+   */
+
 
   TextSelection.prototype.getElement = function () {
     var parentEl = this.range.commonAncestorContainer;
     return parentEl instanceof Element ? parentEl : parentEl.parentElement;
   };
+  /**
+   * Returns the bounding box of the selection.
+   * @returns {DOMRect} The rectangle containing all elements & nodes of the selection.
+   */
+
 
   TextSelection.prototype.getBoundingRect = function () {
     return this.range.getBoundingClientRect();
   };
+  /**
+   * Discards the selection, i.e. - deselect.
+   * @returns {TextSelection} For chaining calls.
+   */
+
 
   TextSelection.prototype.discard = function () {
     this.selection.removeAllRanges();
+    return this;
   };
   /**
    * Initializes a text selection monitoring mechanis.about-content
    * 
    * @param {Element} element The parent DOM element to attach the whole text selection monitoring mechanism to.
-   * @param {Object} settings Settings for monitoring. Check @see TextSelection.defaults.
+   * @param {Object} settings Settings for monitoring. Check {@link TextMonitor.defaults}.
    */
 
 
@@ -153,15 +169,18 @@ var AnnoTip = (function ($, tippy) {
   }
   /**
    * Detach the text selection monitoring mechanism.
+   * @returns {TextMonitor} For chaining calls.
    */
 
 
   TextMonitor.prototype.detach = function () {
     if (this.document) $(this.document.body).off('.' + NS_SEL);
+    return this;
   };
   /**
    * Handles the mouse-up event, supposedly after a selection is made.
    * @param event The actual mouse-up event.
+   * @private
    */
 
 
@@ -183,9 +202,14 @@ var AnnoTip = (function ($, tippy) {
 
 
   TextMonitor.defaults = {
-    // Whether selections over more than one element are allowed.
+    /**
+     * Whether selections over more than one DOM element are allowed.
+     * */
     multipleNodes: false,
-    // function (content, event, ranges)
+
+    /**
+     * Handler when a selection is detected. `function (TextSelection)`.
+     */
     onSelection: null
   };
 
@@ -209,6 +233,7 @@ var AnnoTip = (function ($, tippy) {
   }
   /**
    * Some AnnoTip helpers
+   * @ignore
    */
 
 
@@ -321,6 +346,7 @@ var AnnoTip = (function ($, tippy) {
   };
   /**
    * Private methods
+   * @ignore
    */
 
 
@@ -387,13 +413,44 @@ var AnnoTip = (function ($, tippy) {
 
     return typeof hnd === 'function' ? hnd.apply(this, moreArgs) : undefined;
   };
+  /**
+   * Default settings.
+   */
+
 
   AnnoTip.defaults = {
+    /**
+     * The user-provided context to be added to each {@link Anno} created.
+     */
     context: null,
+
+    /**
+     * Whether to install text selection monitoring. {@link TextMonitor}.
+     * Currently this is the only supported mode.
+     */
     textSelection: true,
+
+    /**
+     * Whether to install element click/handling mointoring. Not supported.
+     */
     elementSelection: true,
+
+    /**
+     * A custom-provided HTML for action buttons, which are openned when a
+     * selection is recognized.
+     */
     actionsHtml: null,
+
+    /**
+     * Additional class-names to be applied to the annotation frame DOM element. 
+     * Can be both array and string (with one or more class names).
+     */
     classNames: null,
+
+    /**
+     * The settings to be passed to the underlying Tippy.js box engine.
+     * {@link https://atomiks.github.io/tippyjs/}.
+     */
     tippySettings: {
       placement: 'auto',
       hideOnClick: false,
@@ -402,9 +459,23 @@ var AnnoTip = (function ($, tippy) {
       interactive: true,
       showOnCreate: true
     },
-    // Handlers. All accept @see {Anno} as an argument.
+
+    /**
+     * Handler to be invoked when a selection is made. The constructed {@link Anno} object
+     * is passed.
+     */
     onSelection: null,
+
+    /**
+     * Handler to be invoked on user action. The default actions are `edit`, `ok` and `cancel`.
+     * The constructed {@link Anno} object is passed.
+     */
     onAction: null,
+
+    /**
+     * Handler to be invoked when the annotation box is about to be closed.
+     * The constructed {@link Anno} object is passed.
+     */
     onClose: null
   };
 

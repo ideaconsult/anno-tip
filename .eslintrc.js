@@ -13,7 +13,7 @@ module.exports = {
         "ecmaVersion": 2018,
         "sourceType": "module"
     },
-    "ignorePatterns": [ "browser/*.js", "tests/*.js" ],
+    "ignorePatterns": [ "dist/*.js", "tests/*.js" ],
     "rules": {
         "accessor-pairs": "error",
         "array-bracket-newline": "error",
