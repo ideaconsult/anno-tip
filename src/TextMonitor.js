@@ -49,6 +49,7 @@ function mergeRanges(ranges) {
  * @param {String} content The plain text version of the selected content
  * @param {Event} event The event that triggered the selection (mouseup)
  * @param {Array<Range>} ranges The array of ranges, that this selection occupies
+ * @private
  */
 function TextSelection(selection, event, ranges) {
 	this.selection = selection;
@@ -60,6 +61,7 @@ function TextSelection(selection, event, ranges) {
 /**
  * Returns the DOM element that wrapps the selection.
  * @returns {Element} The DOM element containing the entire selection.
+ * @private
  */
 TextSelection.prototype.getElement = function() {
 	const parentEl = this.range.commonAncestorContainer;
@@ -70,6 +72,7 @@ TextSelection.prototype.getElement = function() {
 /**
  * Returns the bounding box of the selection.
  * @returns {DOMRect} The rectangle containing all elements & nodes of the selection.
+ * @private
  */
 TextSelection.prototype.getBoundingRect = function () {
 	return this.range.getBoundingClientRect();
@@ -78,6 +81,7 @@ TextSelection.prototype.getBoundingRect = function () {
 /**
  * Discards the selection, i.e. - deselect.
  * @returns {TextSelection} For chaining calls.
+ * @private
  */
 TextSelection.prototype.discard = function () {
 	this.selection.removeAllRanges();
@@ -91,6 +95,7 @@ TextSelection.prototype.discard = function () {
  * 
  * @param {Element} element The parent DOM element to attach the whole text selection monitoring mechanism to.
  * @param {Object} settings Settings for monitoring. Check {@link TextMonitor.defaults}.
+ * @private
  */ 
 function TextMonitor(selector, settings) {
 	this.elements = selector;
@@ -110,6 +115,7 @@ function TextMonitor(selector, settings) {
 /**
  * Detach the text selection monitoring mechanism.
  * @returns {TextMonitor} For chaining calls.
+ * @private
  */
 TextMonitor.prototype.detach = function () {
 	if (this.document)
@@ -130,30 +136,30 @@ TextMonitor.prototype._handleSelection = function (event) {
 	
 	const myRanges = [];
 
-	for (let i = 0; i < selection.rangeCount; ++i) {
-		const r = selection.getRangeAt(i);
+	let mainRoot = null;
 
-		if (!$(r.commonAncestorContainer).parents().is(this.elements))
-			continue;
+	for (let i = 0; i < selection.rangeCount; ++i) {
+		const r = selection.getRangeAt(i),
+			theRoot = $(r.commonAncestorContainer).parents().filter(this.elements)[0];
+
+		if (!mainRoot)
+			mainRoot = theRoot;
+		if (!theRoot || mainRoot != theRoot)
+			continue; // We don't allow multi-rooted selections.
 		else if (this.multipleNodes || myRanges.length == 0 || !isMultiElement(myRanges[0], r))
 			myRanges.push(normalizeRange(r));
 	}
 
 	if (myRanges.length > 0)
-		this.settings.onSelection(new TextSelection(selection, event, myRanges));
+		this.settings.onSelection(mainRoot, new TextSelection(selection, event, myRanges));
 };
 
 /**
  * Default options.
+ * @private
  */
 TextMonitor.defaults = {
-	/**
-	 * Whether selections over more than one DOM element are allowed.
-	 * */ 
 	multipleNodes: false,
-	/**
-	 * Handler when a selection is detected. `function (TextSelection)`.
-	 */
 	onSelection: null
 };
 

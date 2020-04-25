@@ -8,7 +8,8 @@ import './AnnoTip.css';
 
 import $ from 'jquery';
 import tippy from 'tippy.js';
-import TextMonitor  from './TextMonitor';
+import TextMonitor from './TextMonitor';
+import CssSelectorGenerator from 'css-selector-generator';
 
 const NS_ANNO = 'annotip-main';
 const DEF_CONTENT = `<textarea placeholder="Enter your comment..."></textarea>`;
@@ -39,6 +40,7 @@ const EXPANDED_ACTIONS = [
  * @param {Range} range The DOM nodes range, that this selection occupies
  * @param {Event} event The DOM Event that triggered the annotation mechanism
  * @param {Element} element The DOM element, holding the selection
+ * @param {String} reverseSelector The CSS selector string pointing the the exact element.
  * @description The `element` represents the closest common ancesstor of the nodes
  * in `range`, which - in most cases - is limited to one element, anyways.
 */
@@ -97,12 +99,21 @@ AnnoTip.prototype.attach = function (selector) {
 /**
  * Apply the list of annotatons to the page, so that they can be edited later.
  * 
- * @param {Array<Object>} annos List of annotations in the same format, as they were created.
+ * @param {Element} root The base to be used for relative DOM paths stored in the annotations.
+ * @param {Array<Anno>} annos List of annotations in the same format, as they were created.
+ * @param {Function} handler The handler to be invoked for each annotation and located element.
+ * The expected format is: `function (anno)`.
  * @returns {AnnoTip} A self instance for chaining invocations.
+ * @description The routine initially fills the `element` property of each annotation object, based
+ * on the stored `reverseSelector` and then, if a handler is passed, invokes it with the anno object.
  */
-AnnoTip.prototype.applyAnnos = function (annos) {
-	annos.test = "";
-	// TODO: Make sure there is something meaningful to be done here!
+AnnoTip.prototype.applyAnnos = function (root, annos, handler) {
+	for (let i = 0; i < annos.length; ++i) {
+		const oneAnno = annos[i];
+	
+		oneAnno.element = $(oneAnno.reverseSelector, root)[0];
+		this._call(handler, oneAnno);
+	}
 	
 	return this;
 };
@@ -112,10 +123,12 @@ AnnoTip.prototype.applyAnnos = function (annos) {
  * @returns {AnnoTip} A self instance for chaining invocations.
  */
 AnnoTip.prototype.discard = function () {
-	if (this.tp != null)
+	if (this.tp != null) {
 		this.tp.destroy();
+		this.tp = null;
+	}
 
-	this.tp = null;
+	this._tippyBox$ = null;
 
 	return this;
 };
@@ -145,8 +158,6 @@ AnnoTip.prototype.detach = function () {
 	if (this.tp != null)
 		this.tp.destroy();
 
-	this._tippyBox$ = null;
-	
 	// Detach all monitors
 	$.each(this.monitors, (i, s) => s.detach());
 	this.monitors = [];
@@ -187,14 +198,21 @@ AnnoTip.prototype._prepareFrame = function (info) {
 		</div>`;
 };
 
-AnnoTip.prototype._handleSelection = function (selection) {
-	const anno = new Anno({
-		context: this.settings.context,
-		selection: selection.content,
-		range: selection.range,
-		event: selection.event,
-		element: selection.getElement()
-	});
+AnnoTip.prototype._handleSelection = function (selRoot, selection) {
+	const theEl = selection.getElement(),
+		selReverse = CssSelectorGenerator(
+			theEl, 
+			$.extend({ root: selRoot }, this.settings.cssReverseOptions)
+		),
+		anno = new Anno({
+			context: this.settings.context,
+			selection: selection.content,
+			range: selection.range,
+			event: selection.event,
+			element: theEl,
+			root: selRoot,
+			reverseSelector: selReverse
+		});
 
 	if (this.tp != null || this._call('onSelection', anno) === false)
 		return;
@@ -211,14 +229,17 @@ AnnoTip.prototype._handleSelection = function (selection) {
 		}),
 		appendTo: document.body,
 		onShown: () => {
-			// Quite a complex expression. But works! Relies on jQuery .chaining
-			anno.element = this._getTippyBox().on('click.' + NS_ANNO, 'div.annotip-actions button', (e) => {
+			this._getTippyBox().on('click.' + NS_ANNO, 'div.annotip-actions button', (e) => {
 				this._call('onAction', $(e.currentTarget).data('annotipAction'), anno, e);
-			})[0];
+			});
 		},
 		onClickOutside: (tp) => tp.destroy(),
 		onHide: () => this._call('onClose', anno) !== false,
-		onDestroy: () => { this.tp = null; selection.discard(); },
+		onDestroy: () => { 
+			this.tp = null; // This prevents a loop.
+			this.discard(); 
+			selection.discard(); 
+		},
 		getReferenceClientRect: () => selection.getBoundingRect()
 	});
 };
@@ -261,6 +282,12 @@ AnnoTip.defaults = {
 	 * Can be both array and string (with one or more class names).
 	 */
 	classNames: null,
+
+	/**
+	 * Options for css reverse selector, builder, used to construct the {@link Anno}
+	 * `reverseSelector` property. Check {@link https://www.npmjs.com/package/css-selector-generator}.
+	 */
+	cssReverseOptions: null,
 
 	/**
 	 * The settings to be passed to the underlying Tippy.js box engine.

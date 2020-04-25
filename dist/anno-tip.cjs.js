@@ -4,6 +4,7 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var $ = _interopDefault(require('jquery'));
 var tippy = _interopDefault(require('tippy.js'));
+var CssSelectorGenerator = _interopDefault(require('css-selector-generator'));
 
 function _toConsumableArray(arr) {
   return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
@@ -106,6 +107,7 @@ function mergeRanges(ranges) {
  * @param {String} content The plain text version of the selected content
  * @param {Event} event The event that triggered the selection (mouseup)
  * @param {Array<Range>} ranges The array of ranges, that this selection occupies
+ * @private
  */
 
 
@@ -118,6 +120,7 @@ function TextSelection(selection, event, ranges) {
 /**
  * Returns the DOM element that wrapps the selection.
  * @returns {Element} The DOM element containing the entire selection.
+ * @private
  */
 
 
@@ -128,6 +131,7 @@ TextSelection.prototype.getElement = function () {
 /**
  * Returns the bounding box of the selection.
  * @returns {DOMRect} The rectangle containing all elements & nodes of the selection.
+ * @private
  */
 
 
@@ -137,6 +141,7 @@ TextSelection.prototype.getBoundingRect = function () {
 /**
  * Discards the selection, i.e. - deselect.
  * @returns {TextSelection} For chaining calls.
+ * @private
  */
 
 
@@ -149,6 +154,7 @@ TextSelection.prototype.discard = function () {
  * 
  * @param {Element} element The parent DOM element to attach the whole text selection monitoring mechanism to.
  * @param {Object} settings Settings for monitoring. Check {@link TextMonitor.defaults}.
+ * @private
  */
 
 
@@ -171,6 +177,7 @@ function TextMonitor(selector, settings) {
 /**
  * Detach the text selection monitoring mechanism.
  * @returns {TextMonitor} For chaining calls.
+ * @private
  */
 
 
@@ -189,28 +196,26 @@ TextMonitor.prototype._handleSelection = function (event) {
   var selection = this.document.getSelection();
   if (selection.isCollapsed) return;
   var myRanges = [];
+  var mainRoot = null;
 
   for (var i = 0; i < selection.rangeCount; ++i) {
-    var r = selection.getRangeAt(i);
-    if (!$(r.commonAncestorContainer).parents().is(this.elements)) continue;else if (this.multipleNodes || myRanges.length == 0 || !isMultiElement(myRanges[0], r)) myRanges.push(normalizeRange(r));
+    var r = selection.getRangeAt(i),
+        theRoot = $(r.commonAncestorContainer).parents().filter(this.elements)[0];
+    if (!mainRoot) mainRoot = theRoot;
+    if (!theRoot || mainRoot != theRoot) continue; // We don't allow multi-rooted selections.
+    else if (this.multipleNodes || myRanges.length == 0 || !isMultiElement(myRanges[0], r)) myRanges.push(normalizeRange(r));
   }
 
-  if (myRanges.length > 0) this.settings.onSelection(new TextSelection(selection, event, myRanges));
+  if (myRanges.length > 0) this.settings.onSelection(mainRoot, new TextSelection(selection, event, myRanges));
 };
 /**
  * Default options.
+ * @private
  */
 
 
 TextMonitor.defaults = {
-  /**
-   * Whether selections over more than one DOM element are allowed.
-   * */
   multipleNodes: false,
-
-  /**
-   * Handler when a selection is detected. `function (TextSelection)`.
-   */
   onSelection: null
 };
 
@@ -237,6 +242,7 @@ var EXPANDED_ACTIONS = [{
  * @param {Range} range The DOM nodes range, that this selection occupies
  * @param {Event} event The DOM Event that triggered the annotation mechanism
  * @param {Element} element The DOM element, holding the selection
+ * @param {String} reverseSelector The CSS selector string pointing the the exact element.
  * @description The `element` represents the closest common ancesstor of the nodes
  * in `range`, which - in most cases - is limited to one element, anyways.
 */
@@ -297,13 +303,23 @@ AnnoTip.prototype.attach = function (selector) {
 /**
  * Apply the list of annotatons to the page, so that they can be edited later.
  * 
- * @param {Array<Object>} annos List of annotations in the same format, as they were created.
+ * @param {Element} root The base to be used for relative DOM paths stored in the annotations.
+ * @param {Array<Anno>} annos List of annotations in the same format, as they were created.
+ * @param {Function} handler The handler to be invoked for each annotation and located element.
+ * The expected format is: `function (anno)`.
  * @returns {AnnoTip} A self instance for chaining invocations.
+ * @description The routine initially fills the `element` property of each annotation object, based
+ * on the stored `reverseSelector` and then, if a handler is passed, invokes it with the anno object.
  */
 
 
-AnnoTip.prototype.applyAnnos = function (annos) {
-  annos.test = ""; // TODO: Make sure there is something meaningful to be done here!
+AnnoTip.prototype.applyAnnos = function (root, annos, handler) {
+  for (var i = 0; i < annos.length; ++i) {
+    var oneAnno = annos[i];
+    oneAnno.element = $(oneAnno.reverseSelector, root)[0];
+
+    this._call(handler, oneAnno);
+  }
 
   return this;
 };
@@ -314,8 +330,12 @@ AnnoTip.prototype.applyAnnos = function (annos) {
 
 
 AnnoTip.prototype.discard = function () {
-  if (this.tp != null) this.tp.destroy();
-  this.tp = null;
+  if (this.tp != null) {
+    this.tp.destroy();
+    this.tp = null;
+  }
+
+  this._tippyBox$ = null;
   return this;
 };
 /**
@@ -344,8 +364,7 @@ AnnoTip.prototype.update = function (anno) {
 
 AnnoTip.prototype.detach = function () {
   // Destroy the Tippy instance, if such exists.
-  if (this.tp != null) this.tp.destroy();
-  this._tippyBox$ = null; // Detach all monitors
+  if (this.tp != null) this.tp.destroy(); // Detach all monitors
 
   $.each(this.monitors, function (i, s) {
     return s.detach();
@@ -375,15 +394,21 @@ AnnoTip.prototype._prepareFrame = function (info) {
   return "\n\t\t<div class=\"".concat(frameClasses.join(' '), "\">\n\t\t\t<div class=\"annotip-dlg\">").concat(info.content, "</div>\n\t\t\t<div class=\"annotip-actions\">").concat(info.actions, "</div>\n\t\t</div>");
 };
 
-AnnoTip.prototype._handleSelection = function (selection) {
+AnnoTip.prototype._handleSelection = function (selRoot, selection) {
   var _this2 = this;
 
-  var anno = new Anno({
+  var theEl = selection.getElement(),
+      selReverse = CssSelectorGenerator(theEl, $.extend({
+    root: selRoot
+  }, this.settings.cssReverseOptions)),
+      anno = new Anno({
     context: this.settings.context,
     selection: selection.content,
     range: selection.range,
     event: selection.event,
-    element: selection.getElement()
+    element: theEl,
+    root: selRoot,
+    reverseSelector: selReverse
   });
   if (this.tp != null || this._call('onSelection', anno) === false) return; // Cleanup the previous instance, if such was created.
 
@@ -396,10 +421,9 @@ AnnoTip.prototype._handleSelection = function (selection) {
     }),
     appendTo: document.body,
     onShown: function onShown() {
-      // Quite a complex expression. But works! Relies on jQuery .chaining
-      anno.element = _this2._getTippyBox().on('click.' + NS_ANNO, 'div.annotip-actions button', function (e) {
+      _this2._getTippyBox().on('click.' + NS_ANNO, 'div.annotip-actions button', function (e) {
         _this2._call('onAction', $(e.currentTarget).data('annotipAction'), anno, e);
-      })[0];
+      });
     },
     onClickOutside: function onClickOutside(tp) {
       return tp.destroy();
@@ -408,7 +432,10 @@ AnnoTip.prototype._handleSelection = function (selection) {
       return _this2._call('onClose', anno) !== false;
     },
     onDestroy: function onDestroy() {
-      _this2.tp = null;
+      _this2.tp = null; // This prevents a loop.
+
+      _this2.discard();
+
       selection.discard();
     },
     getReferenceClientRect: function getReferenceClientRect() {
@@ -459,6 +486,12 @@ AnnoTip.defaults = {
    * Can be both array and string (with one or more class names).
    */
   classNames: null,
+
+  /**
+   * Options for css reverse selector, builder, used to construct the {@link Anno}
+   * `reverseSelector` property. Check {@link https://www.npmjs.com/package/css-selector-generator}.
+   */
+  cssReverseOptions: null,
 
   /**
    * The settings to be passed to the underlying Tippy.js box engine.
