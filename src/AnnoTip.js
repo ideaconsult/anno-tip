@@ -12,8 +12,25 @@ import TextMonitor  from './TextMonitor';
 
 const NS_ANNO = 'annotip-main';
 const DEF_CONTENT = `<textarea placeholder="Enter your comment..."></textarea>`;
-const DEF_ACTIONS = [ "cancel", "edit" ];
-const EXPANDED_ACTIONS = [ "cancel", "ok" ];
+const DEF_ACTIONS = [
+	{
+		action: "cancel",
+		help: "Cancel the annotation"
+	}, {
+		action: "edit",
+		help: "Make the annotation"
+	}
+];
+const EXPANDED_ACTIONS = [
+	{
+		action: "cancel",
+		help: "Discard the annotation"
+	}, {
+		action: "ok",
+		help: "Confirm the annotation"
+	}
+];
+
 
 /**
  * The wrapper of annotation object being passed around during the whole process.
@@ -33,7 +50,11 @@ function Anno(base) {
  * Some AnnoTip helpers
  * @ignore
  */
-const prepareButton = (action) => `<button data-annotip-action="${action}" class="annotip-action-${action}" />`;
+const prepareButton = (info) => `
+	<button data-annotip-action="${info.action}"
+			class="annotip-action-${info.action}"
+			title="${info.help || ""}"
+	/>`;
 
 /**
  * Initialize the annotation engine

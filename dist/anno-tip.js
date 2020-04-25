@@ -215,8 +215,20 @@ var AnnoTip = (function ($, tippy) {
 
   var NS_ANNO = 'annotip-main';
   var DEF_CONTENT = "<textarea placeholder=\"Enter your comment...\"></textarea>";
-  var DEF_ACTIONS = ["cancel", "edit"];
-  var EXPANDED_ACTIONS = ["cancel", "ok"];
+  var DEF_ACTIONS = [{
+    action: "cancel",
+    help: "Cancel the annotation"
+  }, {
+    action: "edit",
+    help: "Make the annotation"
+  }];
+  var EXPANDED_ACTIONS = [{
+    action: "cancel",
+    help: "Discard the annotation"
+  }, {
+    action: "ok",
+    help: "Confirm the annotation"
+  }];
   /**
    * The wrapper of annotation object being passed around during the whole process.
    * @param {Object} context The context, as being passed to AnnoTip with the settings
@@ -237,8 +249,8 @@ var AnnoTip = (function ($, tippy) {
    */
 
 
-  var prepareButton = function prepareButton(action) {
-    return "<button data-annotip-action=\"".concat(action, "\" class=\"annotip-action-").concat(action, "\" />");
+  var prepareButton = function prepareButton(info) {
+    return "\n\t<button data-annotip-action=\"".concat(info.action, "\"\n\t\t\tclass=\"annotip-action-").concat(info.action, "\"\n\t\t\ttitle=\"").concat(info.help || "", "\"\n\t/>");
   };
   /**
    * Initialize the annotation engine
