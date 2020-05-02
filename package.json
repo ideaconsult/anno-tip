@@ -1,7 +1,12 @@
 {
   "name": "@ideaconsult/anno-tip",
   "version": "1.0.0",
-  "description": "Lightweigh web annotation library built on top of Tippy.js",
+  "description": "Lightweight web annotation library built on top of Tippy.js",
+  "homepage": "https://github.com/ideaconsult/anno-tip#readme",
+  "bugs": {
+    "url": "https://github.com/ideaconsult/anno-tip/issues",
+    "email": "support@ideaconsult.net"
+  },
   "module": "./src/AnnoTip.js",
   "main": "./dist/anno-tip.cjs.js",
   "browser": {
@@ -26,13 +31,15 @@
     "web",
     "tippy"
   ],
-  "author": "Ivan (Jonan) Georgiev <ivan@jonan.info>",
+  "author": {
+    "name": "Ivan (Jonan) Georgiev",
+    "email": "ivan@jonan.info"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/ideaconsult/anno-tip.git"
   },
-  "bugs": "https://github.com/ideaconsult/anno-tip/labels/bug",
   "dependencies": {
     "css-selector-generator": "^2.0.1",
     "jquery": "^3.4.1",
