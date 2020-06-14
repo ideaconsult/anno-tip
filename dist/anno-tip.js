@@ -163,8 +163,7 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
     this.elements = selector;
     this.settings = $.extend(true, {}, TextMonitor.defaults, settings);
     var oneElement = $(selector)[0];
-
-    if (oneElement.ownerDocument) {
+    if (!oneElement) console.log("AnnoTip: No elements found to attach using '" + selector + "'");else if (oneElement.ownerDocument) {
       this.document = oneElement.ownerDocument;
       $(this.document.body).on('mouseup.' + NS_SEL, function (e) {
         return _this._handleSelection(e);

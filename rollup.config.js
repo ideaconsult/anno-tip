@@ -67,15 +67,21 @@ const LIB_CONFIG = {
 };
 
 // Make a full bundle, with all dependency libraries included.
-const fullName = distFile.slice(0, -3) + "-full.min.js";
+const fullName = distFile.slice(0, -3) + "-full";
 const FULL_CONFIG = {
     input: pkg.module,
     output: [{
-		file: fullName,
+		file: fullName + ".js",
+		name: varName,
+		globals: { 'jquery': '$' },
+		sourcemap: false,
+		format: 'umd'
+	}, {
+		file: fullName + ".min.js",
 		name: varName,
 		globals: { 'jquery': '$' },
 		sourcemap: true,
-		sourcemapFile: fullName + '.map',
+		sourcemapFile: fullName + '.min.js.map',
 		format: 'umd'
 	}],
 	plugins: [
