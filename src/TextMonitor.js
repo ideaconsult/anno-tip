@@ -103,7 +103,9 @@ function TextMonitor(selector, settings) {
 
 	const oneElement = $(selector)[0];
 
-	if (oneElement.ownerDocument) {
+	if (!oneElement)
+		console.log("AnnoTip: No elements found to attach using '" + selector + "'");
+	else if (oneElement.ownerDocument) {
 		this.document = oneElement.ownerDocument;
 		
 		$(this.document.body).on('mouseup.' + NS_SEL, (e) => this._handleSelection(e));
