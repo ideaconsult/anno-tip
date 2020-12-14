@@ -137,6 +137,7 @@
 
   <script>
     var at = new AnnoTip({
+      textSelector: 'body',
       onSelection: function (anno) {
         anno.content = anno.selection.toLowerCase();
       },
@@ -153,7 +154,7 @@
         console.log("AnnoTip: onClose!");
       }
     });
-    at.attach(document.body);
+    at.attach();
   </script>
 </body>
 </html>

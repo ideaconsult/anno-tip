@@ -5,7 +5,7 @@ import $ from 'jquery';
 const NS_SEL = "annotip-text";
 
 function isMultiElement(range1, range2) {
-	return $.unique([
+	return $.uniqueSort([
 		range1.startContainer, range1.endContainer, 
 		range2.startContainer, range2.endContainer
 	]).length > 0;

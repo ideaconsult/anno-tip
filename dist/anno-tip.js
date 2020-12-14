@@ -1,9 +1,11 @@
 var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
   'use strict';
 
-  $ = $ && Object.prototype.hasOwnProperty.call($, 'default') ? $['default'] : $;
-  tippy = tippy && Object.prototype.hasOwnProperty.call(tippy, 'default') ? tippy['default'] : tippy;
-  CssSelectorGenerator = CssSelectorGenerator && Object.prototype.hasOwnProperty.call(CssSelectorGenerator, 'default') ? CssSelectorGenerator['default'] : CssSelectorGenerator;
+  function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+  var $__default = /*#__PURE__*/_interopDefaultLegacy($);
+  var tippy__default = /*#__PURE__*/_interopDefaultLegacy(tippy);
+  var CssSelectorGenerator__default = /*#__PURE__*/_interopDefaultLegacy(CssSelectorGenerator);
 
   function _toConsumableArray(arr) {
     return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
@@ -73,7 +75,7 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
   var NS_SEL = "annotip-text";
 
   function isMultiElement(range1, range2) {
-    return $.unique([range1.startContainer, range1.endContainer, range2.startContainer, range2.endContainer]).length > 0;
+    return $__default['default'].uniqueSort([range1.startContainer, range1.endContainer, range2.startContainer, range2.endContainer]).length > 0;
   }
 
   function normalizeRange(range) {
@@ -161,12 +163,11 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
     var _this = this;
 
     this.elements = selector;
-    this.settings = $.extend(true, {}, TextMonitor.defaults, settings);
-    var oneElement = $(selector)[0];
-
-    if (oneElement.ownerDocument) {
+    this.settings = $__default['default'].extend(true, {}, TextMonitor.defaults, settings);
+    var oneElement = $__default['default'](selector)[0];
+    if (!oneElement) console.log("AnnoTip: No elements found to attach using '" + selector + "'");else if (oneElement.ownerDocument) {
       this.document = oneElement.ownerDocument;
-      $(this.document.body).on('mouseup.' + NS_SEL, function (e) {
+      $__default['default'](this.document.body).on('mouseup.' + NS_SEL, function (e) {
         return _this._handleSelection(e);
       });
     } else {
@@ -181,7 +182,7 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
 
 
   TextMonitor.prototype.detach = function () {
-    if (this.document) $(this.document.body).off('.' + NS_SEL);
+    if (this.document) $__default['default'](this.document.body).off('.' + NS_SEL);
     return this;
   };
   /**
@@ -199,7 +200,7 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
 
     for (var i = 0; i < selection.rangeCount; ++i) {
       var r = selection.getRangeAt(i),
-          theRoot = $(r.commonAncestorContainer).parents().filter(this.elements)[0];
+          theRoot = $__default['default'](r.commonAncestorContainer).parents().filter(this.elements)[0];
       if (!mainRoot) mainRoot = theRoot;
       if (!theRoot || mainRoot != theRoot) continue; // We don't allow multi-rooted selections.
       else if (this.multipleNodes || myRanges.length == 0 || !isMultiElement(myRanges[0], r)) myRanges.push(normalizeRange(r));
@@ -218,6 +219,7 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
     onSelection: null
   };
 
+  var NS_SEL$1 = 'annotip-el';
   var NS_ANNO = 'annotip-main';
   var DEF_CONTENT = "<textarea placeholder=\"Enter your comment...\"></textarea>";
   var DEF_ACTIONS = [{
@@ -247,7 +249,7 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
   */
 
   function Anno(base) {
-    $.extend(true, this, base);
+    $__default['default'].extend(true, this, base);
   }
   /**
    * Some AnnoTip helpers
@@ -266,35 +268,40 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
 
 
   function AnnoTip(settings) {
-    this.settings = $.extend(true, {}, AnnoTip.defaults, settings); // Normalize the settings
+    this.settings = $__default['default'].extend(true, {}, AnnoTip.defaults, settings); // Normalize the settings
 
-    if (typeof this.settings.textSelection === 'string') this.settings.textSelection = this.settings.textSelection.toLowerCase();
-    if (this.settings.actionsHtml === null) this.settings.actionsHtml = $.map(DEF_ACTIONS, function (a) {
+    if (this.settings.actionsHtml === null) this.settings.actionsHtml = $__default['default'].map(DEF_ACTIONS, function (a) {
       return prepareButton(a);
     }).join('');
-    tippy.setDefaultProps(this.settings.tippySettings);
+    this.rootElement = $__default['default'](settings.root || document);
+    tippy__default['default'].setDefaultProps(this.settings.tippySettings);
     this.monitors = [];
     this.tp = null;
   }
   /**
-   * Attach handlers on the selected elements, both with text and element monitoring
+   * Attach handlers on, according to settings provided during initialization
    * 
-   * @param {String} selector The jQuery selector to use for listing all elements to monitor.
    * @returns {AnnoTip} A self instance for chaining invocations.
    * @description This method can be invoked many times, with difference selectors.
    */
 
 
-  AnnoTip.prototype.attach = function (selector) {
+  AnnoTip.prototype.attach = function () {
     var _this = this;
 
-    if (this.settings.textSelection && this.settings.textSelection !== 'none') {
-      this.monitors.push(new TextMonitor(selector, {
-        multipleNodes: this.settings.textSelection === 'multi',
+    if (this.settings.textSelector !== false) {
+      this.monitors.push(new TextMonitor(this.settings.textSelector, {
+        multipleNodes: this.settings.multiTextNodes,
         onSelection: function onSelection(content, event, range) {
           return _this._handleSelection(content, event, range);
         }
       }));
+    }
+
+    if (this.settings.elementSelector !== false) {
+      this.rootElement.on('click.' + NS_SEL$1, this.settings.elementSelector, function (event) {
+        _this._handleClick(event);
+      });
     }
 
     return this;
@@ -315,7 +322,7 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
   AnnoTip.prototype.applyAnnos = function (root, annos, handler) {
     for (var i = 0; i < annos.length; ++i) {
       var oneAnno = annos[i];
-      oneAnno.element = $(oneAnno.reverseSelector, root)[0];
+      oneAnno.element = $__default['default'](oneAnno.reverseSelector, root)[0];
 
       this._call(handler, oneAnno);
     }
@@ -348,7 +355,7 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
 
   AnnoTip.prototype.update = function (anno) {
     this.tp.setContent(this._prepareFrame({
-      actions: anno.actionsHtml || $.map(EXPANDED_ACTIONS, function (a) {
+      actions: anno.actionsHtml || $__default['default'].map(EXPANDED_ACTIONS, function (a) {
         return prepareButton(a);
       }).join(''),
       content: anno.content || DEF_CONTENT
@@ -365,15 +372,17 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
     // Destroy the Tippy instance, if such exists.
     if (this.tp != null) this.tp.destroy(); // Detach all monitors
 
-    $.each(this.monitors, function (i, s) {
+    $__default['default'].each(this.monitors, function (i, s) {
       return s.detach();
     });
-    this.monitors = [];
+    this.monitors = []; // Detach from elements
+
+    this.rootElement.off('click.' + NS_SEL$1, this.settings.elementSelector);
     return this;
   };
 
   AnnoTip.prototype.getFrame = function () {
-    return $('div.annotip-frame', this._getTippyBox()[0]);
+    return $__default['default']('div.annotip-frame', this._getTippyBox()[0]);
   };
   /**
    * Private methods
@@ -382,7 +391,7 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
 
 
   AnnoTip.prototype._getTippyBox = function () {
-    if (!this._tippyBox$) this._tippyBox$ = $("div.tippy-box");
+    if (!this._tippyBox$) this._tippyBox$ = $__default['default']("div.tippy-box");
     return this._tippyBox$;
   };
 
@@ -394,26 +403,46 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
   };
 
   AnnoTip.prototype._handleSelection = function (selRoot, selection) {
-    var _this2 = this;
-
-    var theEl = selection.getElement(),
-        selReverse = CssSelectorGenerator(theEl, $.extend({
-      root: selRoot
-    }, this.settings.cssReverseOptions)),
-        anno = new Anno({
+    var theEl = selection.getElement();
+    var anno = new Anno({
       context: this.settings.context,
       selection: selection.content,
       range: selection.range,
       event: selection.event,
       element: theEl,
       root: selRoot,
-      reverseSelector: selReverse
+      reverseSelector: this.settings.cssReverseOptions !== false ? CssSelectorGenerator__default['default'](theEl, $__default['default'].extend({
+        root: this.rootElement[0]
+      }, this.settings.cssReverseOptions)) : null
     });
-    if (this.tp != null || this._call('onSelection', anno) === false) return; // Cleanup the previous instance, if such was created.
+    if (this.tp == null && this._call('onSelection', anno) !== false) this._showAnnoBox(anno, selection.getBoundingRect(), function () {
+      return selection.discard();
+    });
+  };
 
+  AnnoTip.prototype._handleClick = function (event) {
+    var theEl = event.target;
+    var anno = new Anno({
+      context: this.settings.context,
+      selection: null,
+      range: null,
+      event: event,
+      element: theEl,
+      root: event.currentTarget,
+      reverseSelector: this.settings.cssReverseOptions !== false ? CssSelectorGenerator__default['default'](theEl, $__default['default'].extend({
+        root: this.rootElement[0]
+      }, this.settings.cssReverseOptions)) : null
+    });
+    if (this.tp == null && this._call('onElement', anno) !== false) this._showAnnoBox(anno, theEl.getBoundingClientRect());
+  };
+
+  AnnoTip.prototype._showAnnoBox = function (anno, bbox, discardHnd) {
+    var _this2 = this;
+
+    // Cleanup the previous instance, if such was created.
     if (this.tp != null) this.tp.destroy(); // Go, and create a new one.
 
-    this.tp = new tippy(anno.element, {
+    this.tp = new tippy__default['default'](anno.element, {
       content: this._prepareFrame({
         actions: anno.actionsHtml || this.settings.actionsHtml,
         content: anno.content || ''
@@ -421,7 +450,7 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
       appendTo: document.body,
       onShown: function onShown() {
         _this2._getTippyBox().on('click.' + NS_ANNO, 'div.annotip-actions button', function (e) {
-          _this2._call('onAction', $(e.currentTarget).data('annotipAction'), anno, e);
+          _this2._call('onAction', $__default['default'](e.currentTarget).data('annotipAction'), anno, e);
         });
       },
       onClickOutside: function onClickOutside(tp) {
@@ -435,10 +464,10 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
 
         _this2.discard();
 
-        selection.discard();
+        _this2._call(discardHnd, anno);
       },
       getReferenceClientRect: function getReferenceClientRect() {
-        return selection.getBoundingRect();
+        return bbox;
       }
     });
   };
@@ -464,15 +493,27 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
     context: null,
 
     /**
+     * Root element to attach all text selection and element monitoring to.
+     * Defaults to `document`.
+     */
+    root: null,
+
+    /**
      * Whether to install text selection monitoring. {@link TextMonitor}.
      * Currently this is the only supported mode.
      */
-    textSelection: true,
+    textSelector: true,
+
+    /**
+     * Whether to allow selection of more than one Node as part of text
+     * selection.
+     */
+    multiTextNodes: false,
 
     /**
      * Whether to install element click/handling mointoring. Not supported.
      */
-    elementSelection: true,
+    elementSelector: true,
 
     /**
      * A custom-provided HTML for action buttons, which are openned when a
@@ -489,8 +530,9 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
     /**
      * Options for css reverse selector, builder, used to construct the {@link Anno}
      * `reverseSelector` property. Check {@link https://www.npmjs.com/package/css-selector-generator}.
+     * The default value is `false`, i.e. - no css traversing.
      */
-    cssReverseOptions: null,
+    cssReverseOptions: false,
 
     /**
      * The settings to be passed to the underlying Tippy.js box engine.
@@ -506,10 +548,16 @@ var AnnoTip = (function ($, tippy, CssSelectorGenerator) {
     },
 
     /**
-     * Handler to be invoked when a selection is made. The constructed {@link Anno} object
+     * Handler to be invoked when a text selection is made. The constructed {@link Anno} object
      * is passed.
      */
     onSelection: null,
+
+    /**
+     * Handler to be invoked when an element click is detected. The constructed {@link Anno} object
+     * is passed.
+     */
+    onElement: null,
 
     /**
      * Handler to be invoked on user action. The default actions are `edit`, `ok` and `cancel`.

@@ -11,6 +11,7 @@ import tippy from 'tippy.js';
 import TextMonitor from './TextMonitor';
 import CssSelectorGenerator from 'css-selector-generator';
 
+const NS_SEL = 'annotip-el';
 const NS_ANNO = 'annotip-main';
 const DEF_CONTENT = `<textarea placeholder="Enter your comment..."></textarea>`;
 const DEF_ACTIONS = [
@@ -67,10 +68,9 @@ function AnnoTip(settings) {
 	this.settings = $.extend(true, {}, AnnoTip.defaults, settings);
 	
 	// Normalize the settings
-	if (typeof this.settings.textSelection === 'string')
-		this.settings.textSelection = this.settings.textSelection.toLowerCase();
 	if (this.settings.actionsHtml === null)
 		this.settings.actionsHtml = $.map(DEF_ACTIONS, (a) => prepareButton(a)).join('');
+	this.rootElement = $(settings.root || document);
 
 	tippy.setDefaultProps(this.settings.tippySettings);
 	
@@ -79,18 +79,23 @@ function AnnoTip(settings) {
 }
 
 /**
- * Attach handlers on the selected elements, both with text and element monitoring
+ * Attach handlers on, according to settings provided during initialization
  * 
- * @param {String} selector The jQuery selector to use for listing all elements to monitor.
  * @returns {AnnoTip} A self instance for chaining invocations.
  * @description This method can be invoked many times, with difference selectors.
  */
-AnnoTip.prototype.attach = function (selector) {
-	if (this.settings.textSelection && this.settings.textSelection !== 'none') {
-		this.monitors.push(new TextMonitor(selector, {
-			multipleNodes: this.settings.textSelection === 'multi',
+AnnoTip.prototype.attach = function () {
+	if (this.settings.textSelector !== false) {
+		this.monitors.push(new TextMonitor(this.settings.textSelector, {
+			multipleNodes: this.settings.multiTextNodes,
 			onSelection: (content, event, range) => this._handleSelection(content, event, range)
 		}));
+	}
+
+	if (this.settings.elementSelector !== false) {
+		this.rootElement.on('click.' + NS_SEL, this.settings.elementSelector, (event) => {
+			this._handleClick(event);
+		});
 	}
 
 	return this;
@@ -162,6 +167,9 @@ AnnoTip.prototype.detach = function () {
 	$.each(this.monitors, (i, s) => s.detach());
 	this.monitors = [];
 
+	// Detach from elements
+	this.rootElement.off('click.' + NS_SEL, this.settings.elementSelector);
+
 	return this;
 };
 
@@ -199,24 +207,48 @@ AnnoTip.prototype._prepareFrame = function (info) {
 };
 
 AnnoTip.prototype._handleSelection = function (selRoot, selection) {
-	const theEl = selection.getElement(),
-		selReverse = CssSelectorGenerator(
-			theEl, 
-			$.extend({ root: selRoot }, this.settings.cssReverseOptions)
-		),
-		anno = new Anno({
-			context: this.settings.context,
-			selection: selection.content,
-			range: selection.range,
-			event: selection.event,
-			element: theEl,
-			root: selRoot,
-			reverseSelector: selReverse
-		});
+	const theEl = selection.getElement();
+	const anno = new Anno({
+		context: this.settings.context,
+		selection: selection.content,
+		range: selection.range,
+		event: selection.event,
+		element: theEl,
+		root: selRoot,
+		reverseSelector: this.settings.cssReverseOptions !== false 
+			? CssSelectorGenerator(
+				theEl, 
+				$.extend({ root: this.rootElement[0] }, this.settings.cssReverseOptions)
+				)
+			: null
+	});
 
-	if (this.tp != null || this._call('onSelection', anno) === false)
-		return;
+	if (this.tp == null && this._call('onSelection', anno) !== false)
+		this._showAnnoBox(anno, selection.getBoundingRect(), () => selection.discard());
+};
+
+AnnoTip.prototype._handleClick = function (event) {
+	const theEl = event.target;
+	const anno = new Anno({
+		context: this.settings.context,
+		selection: null,
+		range: null,
+		event: event,
+		element: theEl,
+		root: event.currentTarget,
+		reverseSelector: this.settings.cssReverseOptions !== false 
+			? CssSelectorGenerator(
+				theEl, 
+				$.extend({ root: this.rootElement[0] }, this.settings.cssReverseOptions)
+				)
+			: null
+	});
+
+	if (this.tp == null && this._call('onElement', anno) !== false)
+		this._showAnnoBox(anno, theEl.getBoundingClientRect());
+};
 	
+AnnoTip.prototype._showAnnoBox = function (anno, bbox, discardHnd) {
 	// Cleanup the previous instance, if such was created.
 	if (this.tp != null)
 		this.tp.destroy();
@@ -238,9 +270,9 @@ AnnoTip.prototype._handleSelection = function (selRoot, selection) {
 		onDestroy: () => { 
 			this.tp = null; // This prevents a loop.
 			this.discard(); 
-			selection.discard(); 
+			this._call(discardHnd, anno);
 		},
-		getReferenceClientRect: () => selection.getBoundingRect()
+		getReferenceClientRect: () => bbox
 	});
 };
 
@@ -261,15 +293,27 @@ AnnoTip.defaults = {
 	context: null,
 
 	/**
+	 * Root element to attach all text selection and element monitoring to.
+	 * Defaults to `document`.
+	 */
+	root: null,
+
+	/**
 	 * Whether to install text selection monitoring. {@link TextMonitor}.
 	 * Currently this is the only supported mode.
 	 */
-	textSelection: true,
+	textSelector: true,
+
+	/**
+	 * Whether to allow selection of more than one Node as part of text
+	 * selection.
+	 */
+	multiTextNodes: false,
 
 	/**
 	 * Whether to install element click/handling mointoring. Not supported.
 	 */
-	elementSelection: true,
+	elementSelector: true,
 
 	/**
 	 * A custom-provided HTML for action buttons, which are openned when a
@@ -286,8 +330,9 @@ AnnoTip.defaults = {
 	/**
 	 * Options for css reverse selector, builder, used to construct the {@link Anno}
 	 * `reverseSelector` property. Check {@link https://www.npmjs.com/package/css-selector-generator}.
+	 * The default value is `false`, i.e. - no css traversing.
 	 */
-	cssReverseOptions: null,
+	cssReverseOptions: false,
 
 	/**
 	 * The settings to be passed to the underlying Tippy.js box engine.
@@ -303,10 +348,17 @@ AnnoTip.defaults = {
 	},
 
 	/**
-	 * Handler to be invoked when a selection is made. The constructed {@link Anno} object
+	 * Handler to be invoked when a text selection is made. The constructed {@link Anno} object
 	 * is passed.
 	 */
 	onSelection: null,
+
+	/**
+	 * Handler to be invoked when an element click is detected. The constructed {@link Anno} object
+	 * is passed.
+	 */
+	onElement: null,
+
 
 	/**
 	 * Handler to be invoked on user action. The default actions are `edit`, `ok` and `cancel`.

@@ -42,7 +42,7 @@ Initialize the annotation engine
 
 * [AnnoTip(settings)](#AnnoTip) ⇒ [<code>AnnoTip</code>](#AnnoTip)
     * _instance_
-        * [.attach(selector)](#AnnoTip+attach) ⇒ [<code>AnnoTip</code>](#AnnoTip)
+        * [.attach()](#AnnoTip+attach) ⇒ [<code>AnnoTip</code>](#AnnoTip)
         * [.applyAnnos(root, annos, handler)](#AnnoTip+applyAnnos) ⇒ [<code>AnnoTip</code>](#AnnoTip)
         * [.discard()](#AnnoTip+discard) ⇒ [<code>AnnoTip</code>](#AnnoTip)
         * [.update(anno)](#AnnoTip+update) ⇒ [<code>AnnoTip</code>](#AnnoTip)
@@ -50,28 +50,26 @@ Initialize the annotation engine
     * _static_
         * [.defaults](#AnnoTip.defaults)
             * [.context](#AnnoTip.defaults.context)
-            * [.textSelection](#AnnoTip.defaults.textSelection)
-            * [.elementSelection](#AnnoTip.defaults.elementSelection)
+            * [.root](#AnnoTip.defaults.root)
+            * [.textSelector](#AnnoTip.defaults.textSelector)
+            * [.multiTextNodes](#AnnoTip.defaults.multiTextNodes)
+            * [.elementSelector](#AnnoTip.defaults.elementSelector)
             * [.actionsHtml](#AnnoTip.defaults.actionsHtml)
             * [.classNames](#AnnoTip.defaults.classNames)
             * [.cssReverseOptions](#AnnoTip.defaults.cssReverseOptions)
             * [.tippySettings](#AnnoTip.defaults.tippySettings)
             * [.onSelection](#AnnoTip.defaults.onSelection)
+            * [.onElement](#AnnoTip.defaults.onElement)
             * [.onAction](#AnnoTip.defaults.onAction)
             * [.onClose](#AnnoTip.defaults.onClose)
 
 <a name="AnnoTip+attach"></a>
 
-### annoTip.attach(selector) ⇒ [<code>AnnoTip</code>](#AnnoTip)
+### annoTip.attach() ⇒ [<code>AnnoTip</code>](#AnnoTip)
 This method can be invoked many times, with difference selectors.
 
 **Kind**: instance method of [<code>AnnoTip</code>](#AnnoTip)  
 **Returns**: [<code>AnnoTip</code>](#AnnoTip) - A self instance for chaining invocations.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| selector | <code>String</code> | The jQuery selector to use for listing all elements to monitor. |
-
 <a name="AnnoTip+applyAnnos"></a>
 
 ### annoTip.applyAnnos(root, annos, handler) ⇒ [<code>AnnoTip</code>](#AnnoTip)
@@ -123,13 +121,16 @@ Default settings.
 
 * [.defaults](#AnnoTip.defaults)
     * [.context](#AnnoTip.defaults.context)
-    * [.textSelection](#AnnoTip.defaults.textSelection)
-    * [.elementSelection](#AnnoTip.defaults.elementSelection)
+    * [.root](#AnnoTip.defaults.root)
+    * [.textSelector](#AnnoTip.defaults.textSelector)
+    * [.multiTextNodes](#AnnoTip.defaults.multiTextNodes)
+    * [.elementSelector](#AnnoTip.defaults.elementSelector)
     * [.actionsHtml](#AnnoTip.defaults.actionsHtml)
     * [.classNames](#AnnoTip.defaults.classNames)
     * [.cssReverseOptions](#AnnoTip.defaults.cssReverseOptions)
     * [.tippySettings](#AnnoTip.defaults.tippySettings)
     * [.onSelection](#AnnoTip.defaults.onSelection)
+    * [.onElement](#AnnoTip.defaults.onElement)
     * [.onAction](#AnnoTip.defaults.onAction)
     * [.onClose](#AnnoTip.defaults.onClose)
 
@@ -139,16 +140,30 @@ Default settings.
 The user-provided context to be added to each [Anno](#Anno) created.
 
 **Kind**: static property of [<code>defaults</code>](#AnnoTip.defaults)  
-<a name="AnnoTip.defaults.textSelection"></a>
+<a name="AnnoTip.defaults.root"></a>
 
-#### defaults.textSelection
+#### defaults.root
+Root element to attach all text selection and element monitoring to.
+Defaults to `document`.
+
+**Kind**: static property of [<code>defaults</code>](#AnnoTip.defaults)  
+<a name="AnnoTip.defaults.textSelector"></a>
+
+#### defaults.textSelector
 Whether to install text selection monitoring. [TextMonitor](TextMonitor).
 Currently this is the only supported mode.
 
 **Kind**: static property of [<code>defaults</code>](#AnnoTip.defaults)  
-<a name="AnnoTip.defaults.elementSelection"></a>
+<a name="AnnoTip.defaults.multiTextNodes"></a>
 
-#### defaults.elementSelection
+#### defaults.multiTextNodes
+Whether to allow selection of more than one Node as part of text
+selection.
+
+**Kind**: static property of [<code>defaults</code>](#AnnoTip.defaults)  
+<a name="AnnoTip.defaults.elementSelector"></a>
+
+#### defaults.elementSelector
 Whether to install element click/handling mointoring. Not supported.
 
 **Kind**: static property of [<code>defaults</code>](#AnnoTip.defaults)  
@@ -171,6 +186,7 @@ Can be both array and string (with one or more class names).
 #### defaults.cssReverseOptions
 Options for css reverse selector, builder, used to construct the [Anno](#Anno)
 `reverseSelector` property. Check [https://www.npmjs.com/package/css-selector-generator](https://www.npmjs.com/package/css-selector-generator).
+The default value is `false`, i.e. - no css traversing.
 
 **Kind**: static property of [<code>defaults</code>](#AnnoTip.defaults)  
 <a name="AnnoTip.defaults.tippySettings"></a>
@@ -183,7 +199,14 @@ The settings to be passed to the underlying Tippy.js box engine.
 <a name="AnnoTip.defaults.onSelection"></a>
 
 #### defaults.onSelection
-Handler to be invoked when a selection is made. The constructed [Anno](#Anno) object
+Handler to be invoked when a text selection is made. The constructed [Anno](#Anno) object
+is passed.
+
+**Kind**: static property of [<code>defaults</code>](#AnnoTip.defaults)  
+<a name="AnnoTip.defaults.onElement"></a>
+
+#### defaults.onElement
+Handler to be invoked when an element click is detected. The constructed [Anno](#Anno) object
 is passed.
 
 **Kind**: static property of [<code>defaults</code>](#AnnoTip.defaults)  
